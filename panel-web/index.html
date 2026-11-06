@@ -47,7 +47,9 @@
       <canvas id="camara" width="640" height="480"></canvas>
       <p id="estado-camara">Esperando el módulo local...</p>
     </section>
-    <p class="contador">Presentes hoy: <strong id="contador">0</strong></p>
+    <p class="contador">Presentes hoy: <strong id="contador">0</strong>
+      <button id="btn-reiniciar" style="float:right;background:#c0392b;color:white;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px">Reiniciar asistencias</button>
+    </p>
     <ul id="lista"></ul>
 
     <hr class="sep">
@@ -191,6 +193,12 @@
         msg.className = "msg error";
         msg.textContent = "No se pudo conectar al backend.";
       }
+    });
+
+    document.getElementById("btn-reiniciar").addEventListener("click", async () => {
+      if (!confirm("¿Borrar todas las asistencias de hoy?")) return;
+      await fetch(HTTP + "/asistencias/hoy", { method: "DELETE" });
+      location.reload();
     });
 
     cargarHoy();

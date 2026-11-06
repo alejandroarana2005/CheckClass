@@ -28,7 +28,7 @@ if not cors_origins or "*" in cors_origins:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "DELETE"],
     allow_headers=["*"],
 )
 
@@ -415,6 +415,21 @@ async def obtener_foto(id_estudiante: int):
     if not doc or "foto" not in doc:
         raise HTTPException(status_code=404, detail="Foto no encontrada.")
     return Response(content=bytes(doc["foto"]), media_type="image/jpeg")
+
+
+@app.delete("/asistencias/hoy", status_code=204)
+async def reiniciar_asistencias_hoy():
+    hoy = date.today()
+    if pool is not None:
+        try:
+            async with pool.acquire() as con:
+                await con.execute("DELETE FROM asistencias WHERE fecha = $1", hoy)
+        except (asyncpg.PostgresError, OSError, asyncio.TimeoutError):
+            logger.exception("Error al borrar asistencias de hoy.")
+    try:
+        await notificaciones.delete_many({"fecha": hoy.isoformat()})
+    except PyMongoError:
+        logger.exception("Error al borrar notificaciones de hoy.")
 
 
 @app.get("/asistencias/hoy")
