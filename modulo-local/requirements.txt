@@ -3,3 +3,4 @@ face_recognition
 websockets
 numpy
 setuptools
+python-dotenv

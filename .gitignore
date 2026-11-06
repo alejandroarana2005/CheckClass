@@ -1,0 +1,28 @@
+# Entornos virtuales
+venv/
+.venv/
+env/
+
+# Variables de entorno (contraseñas y URLs de bases de datos)
+.env
+.env.*
+!.env.example
+
+# Fotos de estudiantes (datos personales, no subir)
+fotos/
+modulo-local/fotos/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Editor y sistema operativo
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
