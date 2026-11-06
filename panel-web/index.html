@@ -41,7 +41,7 @@
 
   <script>
     const parametros = new URLSearchParams(window.location.search);
-    const HOST_API = parametros.get("api") || (window.location.hostname + ":8000");
+    const HOST_API = parametros.get("api") || "api.checkclass.qd.je";
     const SEGURO = window.location.protocol === "https:";
 
     const HTTP = (SEGURO ? "https://" : "http://") + HOST_API;
