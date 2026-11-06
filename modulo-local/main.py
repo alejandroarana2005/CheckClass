@@ -6,23 +6,51 @@ from pathlib import Path
 
 import cv2
 import face_recognition
+import httpx
+import numpy as np
 from dotenv import load_dotenv
 import websockets
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
-URL = os.getenv("BACKEND_WS")
-if not URL:
-    host = os.getenv("BACKEND_WS_HOST", "localhost:8000")
-    seguro = os.getenv("BACKEND_WS_SECURE", "false").lower() == "true"
-    protocolo = "wss" if seguro else "ws"
-    URL = f"{protocolo}://{host}/ws"
+_host = os.getenv("BACKEND_WS_HOST", "localhost:8000")
+_seguro = os.getenv("BACKEND_WS_SECURE", "false").lower() == "true"
+URL = os.getenv("BACKEND_WS") or f"{'wss' if _seguro else 'ws'}://{_host}/ws"
+HTTP_URL = os.getenv("BACKEND_HTTP_URL") or f"{'https' if _seguro else 'http'}://{_host}"
 ID_CURSO = int(os.getenv("ID_CURSO", "1"))
 ID_DISPOSITIVO = os.getenv("ID_DISPOSITIVO", "salon-101")
 CARPETA_FOTOS = "fotos"
 ESPERA_SEGUNDOS = 10
 VIDEO_FPS = 10
 UMBRAL = 0.5  # menor distancia = más parecido
+
+
+async def cargar_rostros_remotos(ids_locales: set) -> tuple[list, list]:
+    codificaciones, ids = [], []
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.get(f"{HTTP_URL}/estudiantes")
+            if resp.status_code != 200:
+                return codificaciones, ids
+            for est in resp.json():
+                if est["id"] in ids_locales:
+                    continue
+                foto_resp = await client.get(f"{HTTP_URL}/estudiantes/{est['id']}/foto")
+                if foto_resp.status_code != 200:
+                    continue
+                arr = np.frombuffer(foto_resp.content, dtype=np.uint8)
+                img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+                if img is None:
+                    continue
+                rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                enc = face_recognition.face_encodings(rgb)
+                if enc:
+                    codificaciones.append(enc[0])
+                    ids.append(est["id"])
+                    print(f"Rostro remoto cargado: {est['nombre']} (id={est['id']})")
+    except Exception as e:
+        print(f"Advertencia: no se pudieron cargar rostros remotos: {e}")
+    return codificaciones, ids
 
 
 def cargar_rostros():
@@ -42,8 +70,11 @@ def cargar_rostros():
 
 
 async def main():
-    conocidos, ids = cargar_rostros()
-    print(f"Rostros cargados: {len(ids)}")
+    conocidos_local, ids_local = cargar_rostros()
+    conocidos_remotos, ids_remotos = await cargar_rostros_remotos(set(ids_local))
+    conocidos = conocidos_local + conocidos_remotos
+    ids = ids_local + ids_remotos
+    print(f"Rostros cargados: {len(ids)} ({len(ids_local)} locales, {len(ids_remotos)} remotos)")
 
     camara = cv2.VideoCapture(0)
     if not camara.isOpened():

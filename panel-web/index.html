@@ -21,6 +21,18 @@
          box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     li.nuevo { animation: resaltar 2s; }
     @keyframes resaltar { from { background: #c8f7c5; } to { background: white; } }
+    hr.sep { border: none; border-top: 1px solid #dde1e6; margin: 24px 0; }
+    h2 { font-size: 18px; margin: 0 0 12px; }
+    .tarjeta { background: white; padding: 16px; border-radius: 8px;
+               box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 16px; }
+    .tarjeta input[type="text"], .tarjeta input[type="file"] {
+      width: 100%; padding: 8px 12px; margin-bottom: 10px; box-sizing: border-box;
+      border: 1px solid #c8d0da; border-radius: 6px; font-size: 14px; }
+    .tarjeta button { background: #1f3a5f; color: white; border: none;
+      padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+    .tarjeta button:hover { background: #2a4f7c; }
+    .msg { font-size: 13px; margin-top: 8px; color: #2d7a4f; }
+    .msg.error { color: #c0392b; }
   </style>
 </head>
 <body>
@@ -37,6 +49,20 @@
     </section>
     <p class="contador">Presentes hoy: <strong id="contador">0</strong></p>
     <ul id="lista"></ul>
+
+    <hr class="sep">
+    <h2>Registrar estudiante</h2>
+    <div class="tarjeta">
+      <form id="form-registro">
+        <input type="text" id="reg-nombre" placeholder="Nombre completo" required>
+        <input type="file" id="reg-foto" accept="image/*" required>
+        <button type="submit">Registrar</button>
+      </form>
+      <p id="msg-registro" class="msg" hidden></p>
+    </div>
+
+    <h2>Estudiantes registrados</h2>
+    <ul id="lista-estudiantes"></ul>
   </main>
 
   <script>
@@ -124,7 +150,51 @@
       };
     }
 
+    async function cargarEstudiantes() {
+      try {
+        const resp = await fetch(HTTP + "/estudiantes");
+        const lista = document.getElementById("lista-estudiantes");
+        lista.innerHTML = "";
+        (await resp.json()).forEach(est => {
+          const li = document.createElement("li");
+          const nombre = document.createElement("span");
+          nombre.textContent = est.nombre;
+          const codigo = document.createElement("span");
+          codigo.textContent = est.codigo;
+          li.append(nombre, codigo);
+          lista.appendChild(li);
+        });
+      } catch (e) { console.error("No se pudo cargar la lista de estudiantes", e); }
+    }
+
+    document.getElementById("form-registro").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById("msg-registro");
+      const datos = new FormData();
+      datos.append("nombre", document.getElementById("reg-nombre").value);
+      datos.append("foto", document.getElementById("reg-foto").files[0]);
+      msg.hidden = false;
+      msg.className = "msg";
+      msg.textContent = "Registrando...";
+      try {
+        const resp = await fetch(HTTP + "/estudiantes", { method: "POST", body: datos });
+        if (resp.ok) {
+          const est = await resp.json();
+          msg.textContent = `${est.nombre} registrado con código ${est.codigo}.`;
+          e.target.reset();
+          cargarEstudiantes();
+        } else {
+          msg.className = "msg error";
+          msg.textContent = "Error al registrar el estudiante.";
+        }
+      } catch {
+        msg.className = "msg error";
+        msg.textContent = "No se pudo conectar al backend.";
+      }
+    });
+
     cargarHoy();
+    cargarEstudiantes();
     conectar();
   </script>
 </body>

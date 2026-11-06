@@ -3,3 +3,4 @@ uvicorn[standard]
 motor
 asyncpg
 pydantic>=2,<3
+python-multipart

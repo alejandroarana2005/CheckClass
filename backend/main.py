@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, File, Form, HTTPException, Response, UploadFile, WebSocket, WebSocketDisconnect
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from pymongo.errors import DuplicateKeyError, PyMongoError
@@ -28,7 +28,7 @@ if not cors_origins or "*" in cors_origins:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
-    allow_methods=["GET"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
@@ -72,6 +72,7 @@ else:
 base_datos = mongo["asistencia"]
 eventos = base_datos["eventos_deteccion"]
 notificaciones = base_datos["notificaciones_panel"]
+fotos_col = base_datos["fotos_estudiantes"]
 
 
 class Deteccion(BaseModel):
@@ -353,6 +354,67 @@ async def panel(ws: WebSocket):
         logger.debug("Se desconectó un panel.")
     finally:
         paneles.discard(ws)
+
+
+@app.get("/estudiantes")
+async def listar_estudiantes():
+    if pool is None:
+        raise HTTPException(status_code=503, detail="Base de datos no disponible.")
+    try:
+        async with pool.acquire() as con:
+            filas = await con.fetch(
+                "SELECT id, nombre, codigo FROM estudiantes ORDER BY nombre"
+            )
+    except (asyncpg.PostgresError, OSError, asyncio.TimeoutError) as error:
+        raise HTTPException(status_code=503, detail="Base de datos no disponible.") from error
+    return [dict(f) for f in filas]
+
+
+@app.post("/estudiantes", status_code=201)
+async def crear_estudiante(nombre: str = Form(...), foto: UploadFile = File(...)):
+    if pool is None:
+        raise HTTPException(status_code=503, detail="Base de datos no disponible.")
+    contenido = await foto.read()
+    try:
+        async with pool.acquire() as con:
+            async with con.transaction():
+                id_est = await con.fetchval(
+                    "INSERT INTO estudiantes (nombre, codigo) "
+                    "VALUES ($1, gen_random_uuid()::text) RETURNING id",
+                    nombre,
+                )
+                await con.execute(
+                    "UPDATE estudiantes SET codigo = $1 WHERE id = $2",
+                    f"EST-{id_est:03d}", id_est,
+                )
+                await con.execute(
+                    "INSERT INTO matriculas (id_estudiante, id_curso) "
+                    "SELECT $1, id FROM cursos LIMIT 1 ON CONFLICT DO NOTHING",
+                    id_est,
+                )
+    except asyncpg.PostgresError as error:
+        logger.exception("Error al crear el estudiante.")
+        raise HTTPException(status_code=500, detail="Error al guardar el estudiante.") from error
+    try:
+        await fotos_col.update_one(
+            {"id_estudiante": id_est},
+            {"$set": {"id_estudiante": id_est, "foto": contenido}},
+            upsert=True,
+        )
+    except PyMongoError:
+        logger.exception("No se pudo guardar la foto del estudiante en MongoDB.")
+    return {"id": id_est, "nombre": nombre, "codigo": f"EST-{id_est:03d}"}
+
+
+@app.get("/estudiantes/{id_estudiante}/foto")
+async def obtener_foto(id_estudiante: int):
+    try:
+        doc = await fotos_col.find_one({"id_estudiante": id_estudiante})
+    except PyMongoError as error:
+        raise HTTPException(status_code=503, detail="Base de datos no disponible.") from error
+    if not doc or "foto" not in doc:
+        raise HTTPException(status_code=404, detail="Foto no encontrada.")
+    return Response(content=bytes(doc["foto"]), media_type="image/jpeg")
 
 
 @app.get("/asistencias/hoy")
