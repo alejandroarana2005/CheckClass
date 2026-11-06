@@ -1,4 +1,4 @@
-﻿# DetectorAsistencia
+﻿# CheckClass
 
 Sistema de asistencia a clases por reconocimiento facial, con módulo local, comunicación en tiempo real por WebSocket y despliegue en la nube.
 
