@@ -25,14 +25,16 @@ VIDEO_FPS = 10
 UMBRAL = 0.5  # menor distancia = más parecido
 
 
-async def cargar_rostros_remotos(ids_locales: set) -> tuple[list, list]:
+async def cargar_rostros_remotos(ids_locales: set) -> tuple[list, list, set | None]:
     codificaciones, ids = [], []
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.get(f"{HTTP_URL}/estudiantes")
             if resp.status_code != 200:
-                return codificaciones, ids
-            for est in resp.json():
+                return codificaciones, ids, None
+            estudiantes = resp.json()
+            ids_activos = {est["id"] for est in estudiantes}
+            for est in estudiantes:
                 if est["id"] in ids_locales:
                     continue
                 foto_resp = await client.get(f"{HTTP_URL}/estudiantes/{est['id']}/foto")
@@ -50,7 +52,8 @@ async def cargar_rostros_remotos(ids_locales: set) -> tuple[list, list]:
                     print(f"Rostro remoto cargado: {est['nombre']} (id={est['id']})")
     except Exception as e:
         print(f"Advertencia: no se pudieron cargar rostros remotos: {e}")
-    return codificaciones, ids
+        return codificaciones, ids, None
+    return codificaciones, ids, ids_activos
 
 
 def cargar_rostros():
@@ -71,7 +74,11 @@ def cargar_rostros():
 
 async def main():
     conocidos_local, ids_local = cargar_rostros()
-    conocidos_remotos, ids_remotos = await cargar_rostros_remotos(set(ids_local))
+    conocidos_remotos, ids_remotos, ids_activos = await cargar_rostros_remotos(set(ids_local))
+    if ids_activos is not None:
+        pares = [(enc, id_) for enc, id_ in zip(conocidos_local, ids_local) if id_ in ids_activos]
+        conocidos_local = [p[0] for p in pares]
+        ids_local = [p[1] for p in pares]
     conocidos = conocidos_local + conocidos_remotos
     ids = ids_local + ids_remotos
     print(f"Rostros cargados: {len(ids)} ({len(ids_local)} locales, {len(ids_remotos)} remotos)")
