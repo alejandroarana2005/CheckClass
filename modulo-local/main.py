@@ -122,7 +122,7 @@ async def main():
                 if ahora_monotonic - ultimo_frame >= 1 / VIDEO_FPS:
                     codificado, imagen = cv2.imencode(
                         ".jpg",
-                        pequeno,
+                        frame,
                         [int(cv2.IMWRITE_JPEG_QUALITY), 70],
                     )
                     if not codificado:
