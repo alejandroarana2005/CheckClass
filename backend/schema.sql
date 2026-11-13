@@ -56,8 +56,8 @@ $$;
 INSERT INTO estudiantes (nombre, codigo)
 SELECT datos.nombre, datos.codigo
 FROM (VALUES
-    ('Juan Perez', 'EST-001'),
-    ('Maria Gomez', 'EST-002')
+    ('Alejandro Arana', 'EST-001'),
+    ('David Saldaña', 'EST-002')
 ) AS datos(nombre, codigo)
 WHERE NOT EXISTS (SELECT 1 FROM asistencias)
 ON CONFLICT (codigo) DO NOTHING;
