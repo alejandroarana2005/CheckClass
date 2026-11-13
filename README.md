@@ -70,7 +70,9 @@ ID_CURSO=1
 ID_DISPOSITIVO=salon-101
 ```
 
-**3. Agregar fotos de referencia** en la carpeta `fotos/` con el formato `ID_nombre.jpg`, donde `ID` es el identificador del estudiante en la base de datos (por ejemplo: `1_alejandro.jpg`).
+**3. Agregar estudiantes** desde el formulario del panel web (`https://www.checkclass.qd.je`). El formulario registra al estudiante en la base de datos y guarda su foto en la nube, que el módulo local descarga automáticamente al iniciar.
+
+> **Solo para pruebas locales:** también es posible colocar fotos directamente en la carpeta `fotos/` con el formato `ID_nombre.jpg`, donde `ID` es el identificador del estudiante en la base de datos (por ejemplo: `1_alejandro.jpg`). Este método omite la base de datos y no es el flujo de uso normal.
 
 **4. Ejecutar el módulo local:**
 
