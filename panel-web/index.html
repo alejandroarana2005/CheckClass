@@ -362,6 +362,20 @@
     #lista-estudiantes .est-nombre { flex: 1; font-weight: 500; }
     #lista-estudiantes .est-codigo { color: var(--texto-suave); font-size: 12px; }
 
+    .btn-desactivar {
+      background: none;
+      border: none;
+      color: var(--texto-suave);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      transition: color .15s, background .15s;
+      flex-shrink: 0;
+    }
+    .btn-desactivar:hover { color: var(--rojo); background: #fef2f2; }
+
     /* ── Scrollbar sutil ── */
     ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -615,7 +629,18 @@
           c.className = "est-codigo";
           c.textContent = est.codigo;
 
-          li.append(av, n, c);
+          const btn = document.createElement("button");
+          btn.className = "btn-desactivar";
+          btn.title = "Desactivar estudiante";
+          btn.innerHTML = `<svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>`;
+          btn.addEventListener("click", async () => {
+            if (!confirm(`¿Desactivar a ${est.nombre}?`)) return;
+            const r = await fetch(HTTP + "/estudiantes/" + est.id, { method: "DELETE" });
+            if (r.ok) cargarEstudiantes();
+            else alert("No se pudo desactivar el estudiante.");
+          });
+
+          li.append(av, n, c, btn);
           listaEl.appendChild(li);
         });
       } catch (e) { console.error("No se pudo cargar la lista de estudiantes", e); }
