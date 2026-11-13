@@ -406,21 +406,6 @@ async def crear_estudiante(nombre: str = Form(...), foto: UploadFile = File(...)
     return {"id": id_est, "nombre": nombre, "codigo": f"EST-{id_est:03d}"}
 
 
-@app.delete("/estudiantes/{id_estudiante}", status_code=204)
-async def eliminar_estudiante(id_estudiante: int):
-    if pool is None:
-        raise HTTPException(status_code=503, detail="Base de datos no disponible.")
-    try:
-        async with pool.acquire() as con:
-            resultado = await con.execute(
-                "UPDATE estudiantes SET estado = 'IN' WHERE id = $1 AND estado = 'AC'",
-                id_estudiante,
-            )
-        if resultado == "UPDATE 0":
-            raise HTTPException(status_code=404, detail="Estudiante no encontrado.")
-    except (asyncpg.PostgresError, OSError, asyncio.TimeoutError) as error:
-        raise HTTPException(status_code=503, detail="Base de datos no disponible.") from error
-
 
 @app.get("/estudiantes/{id_estudiante}/foto")
 async def obtener_foto(id_estudiante: int):
