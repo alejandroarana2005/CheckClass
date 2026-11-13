@@ -53,6 +53,22 @@ BEGIN
 END
 $$;
 
+ALTER TABLE estudiantes ADD COLUMN IF NOT EXISTS estado TEXT NOT NULL DEFAULT 'AC';
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'estudiantes_estado_valido'
+          AND conrelid = 'estudiantes'::regclass
+    ) THEN
+        ALTER TABLE estudiantes
+        ADD CONSTRAINT estudiantes_estado_valido
+        CHECK (estado IN ('AC', 'IN')) NOT VALID;
+    END IF;
+END
+$$;
+
 INSERT INTO estudiantes (nombre, codigo)
 SELECT datos.nombre, datos.codigo
 FROM (VALUES

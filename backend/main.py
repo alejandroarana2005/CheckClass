@@ -363,7 +363,7 @@ async def listar_estudiantes():
     try:
         async with pool.acquire() as con:
             filas = await con.fetch(
-                "SELECT id, nombre, codigo FROM estudiantes ORDER BY nombre"
+                "SELECT id, nombre, codigo FROM estudiantes WHERE estado = 'AC' ORDER BY nombre"
             )
     except (asyncpg.PostgresError, OSError, asyncio.TimeoutError) as error:
         raise HTTPException(status_code=503, detail="Base de datos no disponible.") from error
@@ -413,16 +413,13 @@ async def eliminar_estudiante(id_estudiante: int):
     try:
         async with pool.acquire() as con:
             resultado = await con.execute(
-                "DELETE FROM estudiantes WHERE id = $1", id_estudiante
+                "UPDATE estudiantes SET estado = 'IN' WHERE id = $1 AND estado = 'AC'",
+                id_estudiante,
             )
-        if resultado == "DELETE 0":
+        if resultado == "UPDATE 0":
             raise HTTPException(status_code=404, detail="Estudiante no encontrado.")
     except (asyncpg.PostgresError, OSError, asyncio.TimeoutError) as error:
         raise HTTPException(status_code=503, detail="Base de datos no disponible.") from error
-    try:
-        await fotos_col.delete_one({"id_estudiante": id_estudiante})
-    except PyMongoError:
-        logger.exception("No se pudo eliminar la foto del estudiante en MongoDB.")
 
 
 @app.get("/estudiantes/{id_estudiante}/foto")
