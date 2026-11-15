@@ -356,6 +356,18 @@ async def panel(ws: WebSocket):
         paneles.discard(ws)
 
 
+@app.get("/cursos")
+async def listar_cursos():
+    if pool is None:
+        raise HTTPException(status_code=503, detail="Base de datos no disponible.")
+    try:
+        async with pool.acquire() as con:
+            filas = await con.fetch("SELECT id, nombre, docente FROM cursos ORDER BY nombre")
+    except (asyncpg.PostgresError, OSError, asyncio.TimeoutError) as error:
+        raise HTTPException(status_code=503, detail="Base de datos no disponible.") from error
+    return [dict(f) for f in filas]
+
+
 @app.get("/health")
 async def health():
     return {"estado": "ok", "postgres": pool is not None}
