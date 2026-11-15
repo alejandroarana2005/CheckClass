@@ -362,6 +362,20 @@
     #lista-estudiantes .est-nombre { flex: 1; font-weight: 500; }
     #lista-estudiantes .est-codigo { color: var(--texto-suave); font-size: 12px; }
 
+    .est-pct {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: #dcfce7;
+      color: #166534;
+    }
+    .est-pct.bajo { background: #fef9c3; color: #854d0e; }
+    .est-pct.muy-bajo { background: #fee2e2; color: #991b1b; }
+    [data-theme="oscuro"] .est-pct { background: #14532d; color: #86efac; }
+    [data-theme="oscuro"] .est-pct.bajo { background: #422006; color: #fde68a; }
+    [data-theme="oscuro"] .est-pct.muy-bajo { background: #450a0a; color: #fca5a5; }
+
 
     /* ── Modo oscuro ── */
     [data-theme="oscuro"] {
