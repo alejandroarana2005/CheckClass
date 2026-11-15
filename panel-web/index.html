@@ -677,7 +677,16 @@
           c.className = "est-codigo";
           c.textContent = est.codigo;
 
-          li.append(av, n, c);
+          const pct = document.createElement("span");
+          pct.className = "est-pct";
+          pct.textContent = "...";
+          fetch(HTTP + "/estadisticas/" + est.id).then(r => r.json()).then(s => {
+            pct.textContent = s.porcentaje_asistencia + "%";
+            if (s.porcentaje_asistencia < 70) pct.classList.add("bajo");
+            if (s.porcentaje_asistencia < 50) pct.classList.add("muy-bajo");
+          }).catch(() => { pct.remove(); });
+
+          li.append(av, n, c, pct);
           listaEl.appendChild(li);
         });
       } catch (e) { console.error("No se pudo cargar la lista de estudiantes", e); }
