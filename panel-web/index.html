@@ -410,6 +410,7 @@
           d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM3 19a9 9 0 0 1 18 0"/>
       </svg>
       CheckClass
+      <span id="nombre-curso" style="font-size:13px;font-weight:400;opacity:.7;margin-left:4px;"></span>
     </div>
     <div style="display:flex;align-items:center;gap:10px;">
       <button id="btn-tema" title="Cambiar tema" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:white;border-radius:8px;padding:6px 8px;cursor:pointer;display:flex;align-items:center;">
@@ -681,6 +682,11 @@
       await fetch(HTTP + "/asistencias/hoy", { method: "DELETE" });
       location.reload();
     });
+
+    // Nombre del curso
+    fetch(HTTP + "/cursos").then(r => r.json()).then(cursos => {
+      if (cursos.length) document.getElementById("nombre-curso").textContent = "· " + cursos[0].nombre;
+    }).catch(() => {});
 
     // Modo oscuro
     if (localStorage.getItem("tema") === "oscuro") document.documentElement.dataset.theme = "oscuro";
