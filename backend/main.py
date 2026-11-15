@@ -461,6 +461,23 @@ async def crear_estudiante(nombre: str = Form(...), foto: UploadFile = File(...)
 
 
 
+@app.get("/estudiantes/{id_estudiante}")
+async def obtener_estudiante(id_estudiante: int):
+    if pool is None:
+        raise HTTPException(status_code=503, detail="Base de datos no disponible.")
+    try:
+        async with pool.acquire() as con:
+            fila = await con.fetchrow(
+                "SELECT id, nombre, codigo, fecha_registro FROM estudiantes WHERE id = $1 AND estado = 'AC'",
+                id_estudiante,
+            )
+    except (asyncpg.PostgresError, OSError, asyncio.TimeoutError) as error:
+        raise HTTPException(status_code=503, detail="Base de datos no disponible.") from error
+    if not fila:
+        raise HTTPException(status_code=404, detail="Estudiante no encontrado.")
+    return dict(fila)
+
+
 @app.get("/estudiantes/{id_estudiante}/foto")
 async def obtener_foto(id_estudiante: int):
     try:
