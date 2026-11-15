@@ -356,6 +356,11 @@ async def panel(ws: WebSocket):
         paneles.discard(ws)
 
 
+@app.get("/health")
+async def health():
+    return {"estado": "ok", "postgres": pool is not None}
+
+
 @app.get("/estudiantes")
 async def listar_estudiantes():
     if pool is None:
