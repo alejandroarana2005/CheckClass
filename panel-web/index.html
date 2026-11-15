@@ -635,6 +635,13 @@
       };
     }
 
+    document.getElementById("buscador").addEventListener("input", (e) => {
+      const q = e.target.value.toLowerCase();
+      document.querySelectorAll("#lista-estudiantes li").forEach(li => {
+        li.style.display = li.querySelector(".est-nombre").textContent.toLowerCase().includes(q) ? "" : "none";
+      });
+    });
+
     async function cargarEstudiantes() {
       try {
         const resp = await fetch(HTTP + "/estudiantes");
