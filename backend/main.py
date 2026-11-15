@@ -386,6 +386,25 @@ async def obtener_curso(id_curso: int):
     return {**dict(fila), "total_estudiantes": total}
 
 
+@app.get("/cursos/{id_curso}/estudiantes")
+async def estudiantes_de_curso(id_curso: int):
+    if pool is None:
+        raise HTTPException(status_code=503, detail="Base de datos no disponible.")
+    try:
+        async with pool.acquire() as con:
+            filas = await con.fetch(
+                """SELECT e.id, e.nombre, e.codigo, e.fecha_registro
+                   FROM estudiantes AS e
+                   JOIN matriculas AS m ON m.id_estudiante = e.id
+                   WHERE m.id_curso = $1 AND e.estado = 'AC'
+                   ORDER BY e.nombre""",
+                id_curso,
+            )
+    except (asyncpg.PostgresError, OSError, asyncio.TimeoutError) as error:
+        raise HTTPException(status_code=503, detail="Base de datos no disponible.") from error
+    return [dict(f) for f in filas]
+
+
 @app.get("/health")
 async def health():
     return {"estado": "ok", "postgres": pool is not None}
