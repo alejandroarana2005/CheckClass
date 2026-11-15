@@ -411,13 +411,14 @@ async def health():
 
 
 @app.get("/estudiantes")
-async def listar_estudiantes():
+async def listar_estudiantes(orden: str = Query(default="nombre")):
     if pool is None:
         raise HTTPException(status_code=503, detail="Base de datos no disponible.")
+    columna = "fecha_registro DESC" if orden == "reciente" else "nombre"
     try:
         async with pool.acquire() as con:
             filas = await con.fetch(
-                "SELECT id, nombre, codigo, fecha_registro FROM estudiantes WHERE estado = 'AC' ORDER BY nombre"
+                f"SELECT id, nombre, codigo, fecha_registro FROM estudiantes WHERE estado = 'AC' ORDER BY {columna}"
             )
     except (asyncpg.PostgresError, OSError, asyncio.TimeoutError) as error:
         raise HTTPException(status_code=503, detail="Base de datos no disponible.") from error
