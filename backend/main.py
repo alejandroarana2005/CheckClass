@@ -363,7 +363,7 @@ async def listar_estudiantes():
     try:
         async with pool.acquire() as con:
             filas = await con.fetch(
-                "SELECT id, nombre, codigo FROM estudiantes WHERE estado = 'AC' ORDER BY nombre"
+                "SELECT id, nombre, codigo, fecha_registro FROM estudiantes WHERE estado = 'AC' ORDER BY nombre"
             )
     except (asyncpg.PostgresError, OSError, asyncio.TimeoutError) as error:
         raise HTTPException(status_code=503, detail="Base de datos no disponible.") from error
