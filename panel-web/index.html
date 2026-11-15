@@ -581,15 +581,22 @@
       contador.textContent = presentes.size;
     }
 
-    async function cargarHoy() {
+    async function cargarAsistencia(fecha) {
+      lista.innerHTML = "";
+      presentes.clear();
+      contador.textContent = 0;
+      const url = fecha ? HTTP + "/asistencias?fecha=" + fecha : HTTP + "/asistencias/hoy";
       try {
-        const respuesta = await fetch(HTTP + "/asistencias/hoy");
-        const filas = await respuesta.json();
+        const filas = await (await fetch(url)).json();
         filas.forEach(f => agregar(f.id_estudiante, f.nombre, f.fecha_hora, false));
-      } catch (e) {
-        console.error("No se pudo cargar el historial de hoy", e);
-      }
+      } catch (e) { console.error("No se pudo cargar asistencia", e); }
     }
+
+    async function cargarHoy() { await cargarAsistencia(null); }
+
+    document.getElementById("selector-fecha").addEventListener("change", (e) => {
+      cargarAsistencia(e.target.value || null);
+    });
 
     function conectar() {
       const ws = new WebSocket(WS);
