@@ -569,7 +569,7 @@ async def asistencias_hoy():
     try:
         async with pool.acquire() as con:
             filas = await con.fetch(
-                """SELECT a.*, e.nombre
+                """SELECT a.*, e.nombre, e.codigo
                    FROM asistencias AS a
                    LEFT JOIN estudiantes AS e ON e.id=a.id_estudiante
                    WHERE a.fecha=$1""",
