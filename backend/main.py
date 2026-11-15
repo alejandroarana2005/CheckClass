@@ -472,6 +472,39 @@ async def obtener_foto(id_estudiante: int):
     return Response(content=bytes(doc["foto"]), media_type="image/jpeg")
 
 
+@app.get("/estadisticas/{id_estudiante}")
+async def estadisticas_estudiante(id_estudiante: int):
+    if pool is None:
+        raise HTTPException(status_code=503, detail="Base de datos no disponible.")
+    try:
+        async with pool.acquire() as con:
+            est = await con.fetchrow(
+                "SELECT id, nombre, codigo FROM estudiantes WHERE id = $1 AND estado = 'AC'",
+                id_estudiante,
+            )
+            if not est:
+                raise HTTPException(status_code=404, detail="Estudiante no encontrado.")
+            clases_asistidas = await con.fetchval(
+                "SELECT COUNT(*) FROM asistencias WHERE id_estudiante = $1", id_estudiante
+            )
+            total_clases = await con.fetchval(
+                """SELECT COUNT(DISTINCT a.fecha)
+                   FROM asistencias AS a
+                   JOIN matriculas AS m ON m.id_curso = a.id_curso
+                   WHERE m.id_estudiante = $1""",
+                id_estudiante,
+            )
+    except (asyncpg.PostgresError, OSError, asyncio.TimeoutError) as error:
+        raise HTTPException(status_code=503, detail="Base de datos no disponible.") from error
+    porcentaje = round(clases_asistidas / total_clases * 100, 1) if total_clases else 0.0
+    return {
+        **dict(est),
+        "clases_asistidas": clases_asistidas,
+        "total_clases": total_clases,
+        "porcentaje_asistencia": porcentaje,
+    }
+
+
 @app.get("/asistencias")
 async def asistencias_por_fecha(fecha: date = Query(default=None)):
     if pool is None:
