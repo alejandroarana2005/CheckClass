@@ -408,10 +408,24 @@
       main {
         grid-template-columns: 1fr;
         grid-template-rows: auto;
+        margin: 16px auto;
+        padding: 0 12px;
+        gap: 14px;
       }
-      .seccion-camara  { grid-column: 1; grid-row: 1; }
+      .seccion-camara     { grid-column: 1; grid-row: 1; }
       .seccion-asistencia { grid-column: 1; grid-row: 2; }
       .seccion-inferior   { grid-column: 1; grid-row: 3; }
+      header { padding: 0 16px; }
+      .header-logo { font-size: 16px; }
+      .estado-badge { padding: 4px 10px; font-size: 12px; }
+      .contador-num { font-size: 28px; }
+      #lista { max-height: 240px; }
+      #lista-estudiantes { max-height: 180px; }
+    }
+
+    @media (max-width: 420px) {
+      .header-logo svg { display: none; }
+      #nombre-curso { display: none; }
     }
   </style>
 </head>
