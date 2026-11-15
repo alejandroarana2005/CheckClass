@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, File, Form, HTTPException, Response, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, File, Form, HTTPException, Query, Response, UploadFile, WebSocket, WebSocketDisconnect
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from pymongo.errors import DuplicateKeyError, PyMongoError
@@ -470,6 +470,26 @@ async def obtener_foto(id_estudiante: int):
     if not doc or "foto" not in doc:
         raise HTTPException(status_code=404, detail="Foto no encontrada.")
     return Response(content=bytes(doc["foto"]), media_type="image/jpeg")
+
+
+@app.get("/asistencias")
+async def asistencias_por_fecha(fecha: date = Query(default=None)):
+    if pool is None:
+        raise HTTPException(status_code=503, detail="Base de datos no disponible.")
+    fecha_consulta = fecha or date.today()
+    try:
+        async with pool.acquire() as con:
+            filas = await con.fetch(
+                """SELECT a.*, e.nombre, e.codigo
+                   FROM asistencias AS a
+                   LEFT JOIN estudiantes AS e ON e.id = a.id_estudiante
+                   WHERE a.fecha = $1
+                   ORDER BY a.fecha_hora""",
+                fecha_consulta,
+            )
+    except (asyncpg.PostgresError, OSError, asyncio.TimeoutError) as error:
+        raise HTTPException(status_code=503, detail="Base de datos no disponible.") from error
+    return [dict(f) for f in filas]
 
 
 @app.delete("/asistencias/hoy", status_code=204)
