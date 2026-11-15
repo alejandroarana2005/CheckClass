@@ -411,9 +411,16 @@
       </svg>
       CheckClass
     </div>
-    <div class="estado-badge">
-      <span class="estado-dot" id="estado-dot"></span>
-      <span id="estado">Conectando...</span>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button id="btn-tema" title="Cambiar tema" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:white;border-radius:8px;padding:6px 8px;cursor:pointer;display:flex;align-items:center;">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z"/>
+        </svg>
+      </button>
+      <div class="estado-badge">
+        <span class="estado-dot" id="estado-dot"></span>
+        <span id="estado">Conectando...</span>
+      </div>
     </div>
   </header>
 
@@ -673,6 +680,14 @@
       if (!confirm("¿Borrar todas las asistencias de hoy?")) return;
       await fetch(HTTP + "/asistencias/hoy", { method: "DELETE" });
       location.reload();
+    });
+
+    // Modo oscuro
+    if (localStorage.getItem("tema") === "oscuro") document.documentElement.dataset.theme = "oscuro";
+    document.getElementById("btn-tema").addEventListener("click", () => {
+      const oscuro = document.documentElement.dataset.theme === "oscuro";
+      document.documentElement.dataset.theme = oscuro ? "" : "oscuro";
+      localStorage.setItem("tema", oscuro ? "claro" : "oscuro");
     });
 
     cargarHoy();
