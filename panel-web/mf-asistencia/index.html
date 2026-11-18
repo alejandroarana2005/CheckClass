@@ -1,0 +1,193 @@
+<style>
+  .mf-asistencia-contador {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--borde);
+  }
+  .mf-asistencia-num {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--azul);
+    line-height: 1;
+  }
+  .mf-asistencia-label { font-size: 13px; color: var(--texto-suave); line-height: 1.4; }
+  .mf-btn-reiniciar {
+    margin-left: auto;
+    background: none;
+    border: 1px solid var(--borde);
+    color: var(--rojo);
+    padding: 7px 13px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: background .15s, border-color .15s;
+  }
+  .mf-btn-reiniciar:hover { background: #fef2f2; border-color: var(--rojo); }
+  #mf-asistencia-lista {
+    list-style: none;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 340px;
+    overflow-y: auto;
+  }
+  #mf-asistencia-lista:empty::after {
+    content: "Sin asistencias registradas aún";
+    display: block;
+    text-align: center;
+    color: var(--texto-suave);
+    font-size: 13px;
+    padding: 24px 0;
+  }
+  #mf-asistencia-lista li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: var(--fondo);
+    border: 1px solid transparent;
+  }
+  [data-theme="oscuro"] #mf-asistencia-lista li { background: #0f172a; }
+  #mf-asistencia-lista li.nuevo { animation: mf-resaltar 2.5s ease-out; }
+  @keyframes mf-resaltar {
+    0%   { background: #d1fae5; border-color: #6ee7b7; }
+    100% { background: var(--fondo); border-color: transparent; }
+  }
+  .mf-avatar {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--azul), var(--acento));
+    color: white; font-size: 13px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .mf-asistencia-info { flex: 1; min-width: 0; }
+  .mf-asistencia-nombre {
+    font-size: 14px; font-weight: 500;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .mf-asistencia-hora { font-size: 12px; color: var(--texto-suave); margin-top: 1px; }
+  .mf-fecha-input {
+    border: 1px solid var(--borde);
+    border-radius: 7px;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-family: inherit;
+    background: var(--fondo);
+    color: var(--texto);
+    cursor: pointer;
+  }
+</style>
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">
+      <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+      </svg>
+      Asistencia de hoy
+    </span>
+    <input type="date" id="mf-asistencia-fecha" class="mf-fecha-input">
+  </div>
+  <div class="mf-asistencia-contador">
+    <div>
+      <div class="mf-asistencia-num" id="mf-asistencia-contador">0</div>
+      <div class="mf-asistencia-label">estudiantes<br>presentes</div>
+    </div>
+    <button class="mf-btn-reiniciar" id="mf-asistencia-reiniciar">
+      <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"/>
+      </svg>
+      Reiniciar
+    </button>
+  </div>
+  <ul id="mf-asistencia-lista"></ul>
+</div>
+
+<script>
+  (function () {
+    const HTTP       = window.CHECKCLASS.HTTP;
+    const lista      = document.getElementById("mf-asistencia-lista");
+    const contadorEl = document.getElementById("mf-asistencia-contador");
+    const presentes  = new Set();
+
+    function iniciales(nombre) {
+      return nombre.split(" ").slice(0, 2).map(p => p[0]).join("").toUpperCase();
+    }
+
+    function formatearHora(texto) {
+      const conZona = /Z|[+-]\d\d:\d\d$/.test(texto) ? texto : texto + "Z";
+      return new Date(conZona).toLocaleTimeString("es-CO");
+    }
+
+    function agregar(id, nombre, hora, esNuevo) {
+      if (presentes.has(id)) return;
+      presentes.add(id);
+
+      const nombreTexto = nombre || ("Estudiante " + id);
+      const li = document.createElement("li");
+      if (esNuevo) li.classList.add("nuevo");
+
+      const av = document.createElement("div");
+      av.className = "mf-avatar";
+      av.textContent = iniciales(nombreTexto);
+
+      const info = document.createElement("div");
+      info.className = "mf-asistencia-info";
+
+      const n = document.createElement("div");
+      n.className = "mf-asistencia-nombre";
+      n.textContent = nombreTexto;
+
+      const h = document.createElement("div");
+      h.className = "mf-asistencia-hora";
+      h.textContent = formatearHora(hora);
+
+      info.append(n, h);
+      li.append(av, info);
+      lista.prepend(li);
+      contadorEl.textContent = presentes.size;
+    }
+
+    async function cargarAsistencia(fecha) {
+      lista.innerHTML = "";
+      presentes.clear();
+      contadorEl.textContent = 0;
+      const url = fecha
+        ? HTTP + "/asistencias?fecha=" + fecha
+        : HTTP + "/asistencias/hoy";
+      try {
+        const filas = await (await fetch(url)).json();
+        filas.forEach(f => agregar(f.id_estudiante, f.nombre, f.fecha_hora, false));
+      } catch (e) { console.error("No se pudo cargar asistencia", e); }
+    }
+
+    // Escucha detecciones en tiempo real del shell
+    window.addEventListener("checkclass:asistencia", (e) => {
+      agregar(e.detail.id_estudiante, e.detail.nombre, e.detail.hora, true);
+    });
+
+    document.getElementById("mf-asistencia-fecha").addEventListener("change", (e) => {
+      cargarAsistencia(e.target.value || null);
+    });
+
+    document.getElementById("mf-asistencia-reiniciar").addEventListener("click", async () => {
+      if (!confirm("¿Borrar todas las asistencias de hoy?")) return;
+      await fetch(HTTP + "/asistencias/hoy", { method: "DELETE" });
+      location.reload();
+    });
+
+    cargarAsistencia(null);
+  })();
+</script>

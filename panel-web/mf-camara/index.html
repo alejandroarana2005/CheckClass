@@ -1,0 +1,65 @@
+<style>
+  #mf-camara-canvas {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4/3;
+    background: #0f172a;
+  }
+  [data-theme="oscuro"] #mf-camara-canvas { background: #020617; }
+  .mf-camara-footer {
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-top: 1px solid var(--borde);
+    font-size: 13px;
+    color: var(--texto-suave);
+  }
+</style>
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">
+      <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9A2.25 2.25 0 0 0 13.5 5.25h-9A2.25 2.25 0 0 0 2.25 7.5v9A2.25 2.25 0 0 0 4.5 18.75Z"/>
+      </svg>
+      Cámara en vivo
+    </span>
+  </div>
+  <canvas id="mf-camara-canvas" width="640" height="480"></canvas>
+  <div class="mf-camara-footer">
+    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10"/><path stroke-linecap="round" d="M12 8v4l2 2"/>
+    </svg>
+    <span id="mf-camara-estado">Esperando el módulo local...</span>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const canvas   = document.getElementById("mf-camara-canvas");
+    const ctx      = canvas.getContext("2d");
+    const estadoEl = document.getElementById("mf-camara-estado");
+    let frameNum   = 0;
+
+    window.addEventListener("checkclass:frame", (e) => {
+      const actual = ++frameNum;
+      createImageBitmap(e.detail).then((img) => {
+        if (actual === frameNum) {
+          canvas.width  = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0);
+          estadoEl.textContent = "Video en vivo";
+        }
+        img.close();
+      }).catch((err) => console.error("No se pudo mostrar el frame:", err));
+    });
+
+    window.addEventListener("checkclass:conexion", (e) => {
+      estadoEl.textContent = e.detail.estado === "reconectando"
+        ? "Conexión con el backend interrumpida"
+        : "Esperando el módulo local...";
+    });
+  })();
+</script>

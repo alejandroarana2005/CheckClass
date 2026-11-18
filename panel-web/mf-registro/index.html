@@ -1,0 +1,60 @@
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">
+      <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766Z"/>
+      </svg>
+      Registrar estudiante
+    </span>
+  </div>
+  <div class="card-body">
+    <form id="mf-registro-form">
+      <div class="form-grupo">
+        <label class="form-label" for="mf-reg-nombre">Nombre completo</label>
+        <input class="form-input" type="text" id="mf-reg-nombre" placeholder="Ej. María García" required>
+      </div>
+      <div class="form-grupo">
+        <label class="form-label" for="mf-reg-foto">Foto de referencia</label>
+        <input class="form-input" type="file" id="mf-reg-foto" accept="image/*" required>
+      </div>
+      <button class="btn-primario" type="submit">Registrar estudiante</button>
+    </form>
+    <p id="mf-registro-msg" class="msg" hidden></p>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const HTTP = window.CHECKCLASS.HTTP;
+
+    document.getElementById("mf-registro-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const msg   = document.getElementById("mf-registro-msg");
+      const datos = new FormData();
+      datos.append("nombre", document.getElementById("mf-reg-nombre").value);
+      datos.append("foto",   document.getElementById("mf-reg-foto").files[0]);
+
+      msg.hidden    = false;
+      msg.className = "msg";
+      msg.textContent = "Registrando...";
+
+      try {
+        const resp = await fetch(HTTP + "/estudiantes", { method: "POST", body: datos });
+        if (resp.ok) {
+          const est = await resp.json();
+          msg.textContent = `${est.nombre} registrado con código ${est.codigo}.`;
+          e.target.reset();
+          // Notifica al microfrontend de estudiantes para que recargue su lista
+          window.dispatchEvent(new CustomEvent("checkclass:nuevo-estudiante"));
+        } else {
+          msg.className   = "msg error";
+          msg.textContent = "Error al registrar el estudiante.";
+        }
+      } catch {
+        msg.className   = "msg error";
+        msg.textContent = "No se pudo conectar al backend.";
+      }
+    });
+  })();
+</script>
